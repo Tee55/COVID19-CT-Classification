@@ -132,6 +132,8 @@ def lda(X_train, y_train, X_test, y_test):
 
     prediction = clf.predict(X_test)
 
+    cal_cr_balance_cr(prediction, y_test)
+
 
 def knn(X_train, y_train, X_test, y_test):
 
@@ -140,15 +142,37 @@ def knn(X_train, y_train, X_test, y_test):
 
     prediction = classifier.predict(X_test)
 
+    cal_cr_balance_cr(prediction, y_test)
+
 def cal_cr_balance_cr(prediction, y_test):
 
-    
+    TP = 0
+    TN = 0
+    FP = 0
+    FN = 0
 
-    for pred, y in zip(prediction, test_y)
+    for index, (pred, y) in enumerate(zip(prediction, y_test)):
 
+        if index < 10:
+            if pred == y:
+                TP += 1
+            else:
+                TN += 1
+        else:
+            if pred == y:
+                FP += 1
+            else:
+                FN += 1
 
+    CR = (TP+TN)/prediction.shape[0]
 
+    TPR = TP/(TP + FN)
+    TNR = TN/(FP + TN)
 
+    balance_CR = (TPR + TNR)/2
+
+    print(CR)
+    print(balance_CR)
 
 def main():
     
@@ -193,7 +217,6 @@ def main():
     first_feature = idx[0]
     second_feature = idx[1]
 
-
     for index, patient_subjects in enumerate(data_raw[0:23]):
     
         patient_features = compute(patient_subjects[0])
@@ -229,8 +252,6 @@ def main():
 
     knn(train_X, train_y, test_X, test_y)
     lda(train_X, train_y, test_X, test_y)
-
-
 
 if __name__ == '__main__':
     main()
