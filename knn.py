@@ -35,20 +35,18 @@ def segmentation(x, time_length, time_shift):
 
     index = 0
 
-    while true:
+    while True:
 
-        if index*shift_num+length > len(x):
+        if index*shift_num+length >= len(x):
             break
         else:
 
             array = x[index*shift_num:index*shift_num+length]
-
             epoches_array.append(array)
 
             index += 1
 
-    print(len(epoches_array))
-    print(i)
+    #print(len(epoches_array))
 
     return epoches_array
 
@@ -73,7 +71,7 @@ def compute(x):
             beta = bandpower(epoch, 13, 30)
             gamma = bandpower(epoch, 30, 45)
 
-            total_power = bandpower(epoch, t, 1, 45)
+            total_power = bandpower(epoch, 1, 45)
 
             delta_array.append(delta)
             theta_array.append(theta)
@@ -142,6 +140,16 @@ def knn(X_train, y_train, X_test, y_test):
 
     prediction = classifier.predict(X_test)
 
+def cal_cr_balance_cr(prediction, y_test):
+
+    
+
+    for pred, y in zip(prediction, test_y)
+
+
+
+
+
 def main():
     
     mat = scipy.io.loadmat('Tee_170321.mat')
@@ -163,14 +171,6 @@ def main():
         subjects_features.append(patient_features)
         subjects_labels.append("1")
 
-        if index < 13:
-            train_X.append(patient_features)
-            train_y.append("1")
-        else:
-            test_X.append(patient_features)
-            test_y.append("1")
-
-
     for index, HC_subjects in enumerate(data_raw[23:47]):
 
         HC_features = compute(HC_subjects[0])
@@ -178,34 +178,59 @@ def main():
         subjects_features.append(HC_features)
         subjects_labels.append("0")
 
-        if index < 14:
-            train_X.append(patient_features)
-            train_y.append("0")
-        else:
-            test_X.append(patient_features)
-            test_y.append("0")
-
     subjects_features = np.asarray(subjects_features)
     subjects_labels = np.asarray(subjects_labels)
 
-    train_X = np.asarray(train_X)
-    train_y = np.asarray(train_y)
-    test_X = np.asarray(test_X)
-    test_y = np.asarray(test_y)
-
     print(subjects_features.shape)
     print(subjects_labels.shape)
-
-    print(train_X.shape)
-    print(train_y.shape)
-    print(test_X.shape)
-    print(test_y.shape)
 
     fs_score = fisher_score.fisher_score(subjects_features, subjects_labels)
 
     idx = fisher_score.feature_ranking(fs_score)
 
     print(idx)
+
+    first_feature = idx[0]
+    second_feature = idx[1]
+
+
+    for index, patient_subjects in enumerate(data_raw[0:23]):
+    
+        patient_features = compute(patient_subjects[0])
+
+        if index < 13:
+            train_X.append([patient_features[first_feature], patient_features[second_feature]])
+            train_y.append("1")
+        else:
+            test_X.append([patient_features[first_feature], patient_features[second_feature]])
+            test_y.append("1")
+
+
+    for index, HC_subjects in enumerate(data_raw[23:47]):
+
+        HC_features = compute(HC_subjects[0])
+
+        if index < 14:
+            train_X.append([HC_features[first_feature], HC_features[second_feature]])
+            train_y.append("0")
+        else:
+            test_X.append([HC_features[first_feature], HC_features[second_feature]])
+            test_y.append("0")
+
+    train_X = np.asarray(train_X)
+    train_y = np.asarray(train_y)
+    test_X = np.asarray(test_X)
+    test_y = np.asarray(test_y)
+
+    print(train_X.shape)
+    print(train_y.shape)
+    print(test_X.shape)
+    print(test_y.shape)
+
+    knn(train_X, train_y, test_X, test_y)
+    lda(train_X, train_y, test_X, test_y)
+
+
 
 if __name__ == '__main__':
     main()
