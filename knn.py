@@ -8,6 +8,7 @@ from skfeature.function.similarity_based import fisher_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
+from sklearn.model_selection import LeaveOneOut
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -148,18 +149,32 @@ def relative_power_lab(rp_ratio_array):
 
 def lda(X_train, y_train, X_val, y_val):
 
-    clf = LinearDiscriminantAnalysis()
-    X = clf.fit_transform(X_train, y_train)
-    y = y_train
+    lda = LinearDiscriminantAnalysis()
+    lda_object = lda.fit(X_train, y_train)
 
-    prediction = clf.predict(X_val)
+    prediction = lda.predict(X_val)
 
     print(prediction)
 
     #cal_cr_balance_cr(prediction, y_val)
 
-    for l,c,m in zip(np.unique(y),['r','g','b'],['s','x','o']):
-        plt.scatter(X[y==l], X[y==l], c=c, marker=m, label=l,edgecolors='black')
+    #Plot train data
+    for index, X in enumerate(X_train):
+        if index < 23:
+            plt.scatter(X[0], X[1], c='r')
+        else:
+            plt.scatter(X[0], X[1], c='b')
+
+    plt.scatter(X_val[:,0], X_val[:,1], c='g')
+
+    x1 = np.array([np.min(X_train[:,0], axis=0), np.max(X_train[:,0], axis=0)])
+
+    #Plot line
+    b, w1, w2 = lda.intercept_[0], lda.coef_[0][0], lda.coef_[0][1]
+    y1 = -(b + x1*w1)/w2    
+    plt.plot(x1, y1)
+
+    plt.show()
 
 def knn(X_train, y_train, X_val, y_val):
 
@@ -230,13 +245,13 @@ def find_first_two_features(data_raw):
     train_labels = np.asarray(train_labels)
 
     band_DF = pd.DataFrame(train_features)
-    print(band_DF)
+    #print(band_DF)
 
     fs_score = fisher_score.fisher_score(train_features, train_labels)
 
     idx = fisher_score.feature_ranking(fs_score)
 
-    print(idx)
+    #print(idx)
 
     return idx[0], idx[1]
 
@@ -280,14 +295,51 @@ def main():
     val_X = np.asarray(val_X)
     val_y = np.asarray(val_y)
 
+    """
     print(train_X.shape)
     print(train_y.shape)
     print(val_X.shape)
     print(val_y.shape)
+    """
 
     knn(train_X, train_y, val_X, val_y)
     lda(train_X, train_y, val_X, val_y)
 
+def leave_one_out():
+
+    mat = scipy.io.loadmat('Tee_170321.mat')
+
+    data_raw = mat['data']
+
+    X = []
+    y = []
+
+    first_feature, second_feature = find_first_two_features(data_raw)
+
+    for index, subjects in enumerate(data_raw):
+    
+        features = compute(subjects[0])
+
+        X.append([features[first_feature], features[second_feature]])
+        if index < 23:
+            y.append(patient)
+        else:
+            y.append(HC)
+
+    X = np.asarray(X)
+    y = np.asarray(y)
+
+    loo = LeaveOneOut()
+
+    for train_index, test_index in loo.split(X):
+
+        train_X, val_X = X[train_index], X[test_index]
+        train_y, val_y = y[train_index], y[test_index]
+
+        lda(train_X, train_y, val_X, val_y)
+        #knn(train_X, train_y, val_X, val_y)
+
 if __name__ == '__main__':
-    main()
+    #main()
+    leave_one_out()
     
