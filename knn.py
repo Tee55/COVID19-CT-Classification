@@ -335,6 +335,10 @@ def leave_one_out():
         lda(train_X, train_y, val_X, val_y)
         #knn(train_X, train_y, val_X, val_y)
 
+def add_one_feature():
+
+    
+
 if __name__ == '__main__':
     #main()
     leave_one_out()
