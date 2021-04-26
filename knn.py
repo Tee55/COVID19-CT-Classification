@@ -9,10 +9,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 from sklearn.model_selection import LeaveOneOut
+import progressbar
 
 np.set_printoptions(threshold=sys.maxsize)
 
-fs=500
+fs = 500
 patient = 1
 HC = 0
 
@@ -154,10 +155,6 @@ def lda(X_train, y_train, X_val, y_val):
 
     prediction = lda.predict(X_val)
 
-    print(prediction)
-
-    #cal_cr_balance_cr(prediction, y_val)
-
     #Plot train data
     for index, X in enumerate(X_train):
         if index < 23:
@@ -174,7 +171,9 @@ def lda(X_train, y_train, X_val, y_val):
     y1 = -(b + x1*w1)/w2    
     plt.plot(x1, y1)
 
-    plt.show()
+    #plt.show()
+
+    return prediction
 
 def knn(X_train, y_train, X_val, y_val):
 
@@ -182,8 +181,6 @@ def knn(X_train, y_train, X_val, y_val):
     classifier.fit(X_train, y_train)
 
     prediction = classifier.predict(X_val)
-
-    #cal_cr_balance_cr(prediction, y_val)
 
 def cal_cr_balance_cr(prediction, y_val):
 
@@ -312,34 +309,98 @@ def leave_one_out():
 
     first_feature, second_feature = find_first_two_features(data_raw)
 
+    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+
     for index, subjects in enumerate(data_raw):
     
         features = compute(subjects[0])
 
         X.append([features[first_feature], features[second_feature]])
+
         if index < 23:
             y.append(patient)
         else:
             y.append(HC)
+
+        bar.update(index)
 
     X = np.asarray(X)
     y = np.asarray(y)
 
     loo = LeaveOneOut()
 
+    com_pred = []
+
     for train_index, test_index in loo.split(X):
 
         train_X, val_X = X[train_index], X[test_index]
         train_y, val_y = y[train_index], y[test_index]
 
-        lda(train_X, train_y, val_X, val_y)
-        #knn(train_X, train_y, val_X, val_y)
+        pred = lda(train_X, train_y, val_X, val_y)
+        #pred = knn(train_X, train_y, val_X, val_y)
+
+        com_pred.append(pred)
+
+    com_pred = np.asarray(com_pred)
+
+    print(com_pred.shape)
+
+    cal_cr_balance_cr(com_pred, y)
 
 def add_one_feature():
 
-    
+    mat = scipy.io.loadmat('Tee_170321.mat')
+
+    data_raw = mat['data']
+
+    loo = LeaveOneOut()
+
+    i = 0
+
+    with progressbar.ProgressBar(max_value=progressbar.UnknownLength) as bar:
+
+        for com_index in range(5, 47):
+
+            X = []
+            y = []
+
+            for index, subjects in enumerate(data_raw):
+            
+                features = compute(subjects[0])
+
+                X.append(features[0:com_index])
+                if index < 23:
+                    y.append(patient)
+                else:
+                    y.append(HC)
+
+            X = np.asarray(X)
+            y = np.asarray(y)
+
+            com_pred = []
+
+            for train_index, test_index in loo.split(X):
+
+                train_X, val_X = X[train_index], X[test_index]
+                train_y, val_y = y[train_index], y[test_index]
+
+                pred = lda(train_X, train_y, val_X, val_y)
+                #pred = knn(train_X, train_y, val_X, val_y)
+
+                com_pred.append(pred)
+
+            com_pred = np.asarray(com_pred)
+
+            print(com_pred.shape)
+
+            cal_cr_balance_cr(com_pred, y)
+
+            bar.update(i)
+
+            i += 1
 
 if __name__ == '__main__':
     #main()
-    leave_one_out()
+    #leave_one_out()
+    add_one_feature()
     
