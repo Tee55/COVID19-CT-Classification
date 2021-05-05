@@ -9,7 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 from sklearn.model_selection import LeaveOneOut
-import progressbar
+from progress.bar import Bar
 
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -155,6 +155,10 @@ def lda(X_train, y_train, X_val, y_val):
 
     prediction = lda.predict(X_val)
 
+    return prediction
+
+def lda_plot():
+
     #Plot train data
     for index, X in enumerate(X_train):
         if index < 23:
@@ -166,14 +170,14 @@ def lda(X_train, y_train, X_val, y_val):
 
     x1 = np.array([np.min(X_train[:,0], axis=0), np.max(X_train[:,0], axis=0)])
 
+    '''
     #Plot line
     b, w1, w2 = lda.intercept_[0], lda.coef_[0][0], lda.coef_[0][1]
     y1 = -(b + x1*w1)/w2    
     plt.plot(x1, y1)
+    '''
 
-    #plt.show()
-
-    return prediction
+    plt.show()
 
 def knn(X_train, y_train, X_val, y_val):
 
@@ -309,20 +313,19 @@ def leave_one_out():
 
     first_feature, second_feature = find_first_two_features(data_raw)
 
-    bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+    with Bar('Processing') as bar:
+        for index, subjects in enumerate(data_raw):
+        
+            features = compute(subjects[0])
 
-    for index, subjects in enumerate(data_raw):
-    
-        features = compute(subjects[0])
+            X.append([features[first_feature], features[second_feature]])
 
-        X.append([features[first_feature], features[second_feature]])
+            if index < 23:
+                y.append(patient)
+            else:
+                y.append(HC)
 
-        if index < 23:
-            y.append(patient)
-        else:
-            y.append(HC)
-
-        bar.update(index)
+            bar.next()
 
     X = np.asarray(X)
     y = np.asarray(y)
@@ -343,8 +346,6 @@ def leave_one_out():
 
     com_pred = np.asarray(com_pred)
 
-    print(com_pred.shape)
-
     cal_cr_balance_cr(com_pred, y)
 
 def add_one_feature():
@@ -355,9 +356,7 @@ def add_one_feature():
 
     loo = LeaveOneOut()
 
-    i = 0
-
-    with progressbar.ProgressBar(max_value=progressbar.UnknownLength) as bar:
+    with Bar('Processing') as bar:
 
         for com_index in range(5, 47):
 
@@ -391,13 +390,9 @@ def add_one_feature():
 
             com_pred = np.asarray(com_pred)
 
-            print(com_pred.shape)
-
             cal_cr_balance_cr(com_pred, y)
 
-            bar.update(i)
-
-            i += 1
+            bar.next()
 
 if __name__ == '__main__':
     #main()
