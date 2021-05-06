@@ -125,98 +125,6 @@ def compute(x):
 
     return rp_features
 
-def relative_power_lab(rp_ratio_array):
-    
-    rp_lab_array = []
-
-    for band_index in range(0, 5):
-        for channel in range(0, 30):
-            for rec_channel in range(channel, 30):
-
-                if rec_channel == channel:
-                    continue
-                else:
-    
-                    b_1 = rp_ratio_array[channel][band_index]
-                    b_2 = rp_ratio_array[rec_channel][band_index]
-
-                    rp_lab = (b_2 - b_1) / (b_1 + b_2)
-
-                    rp_lab_array.append(rp_lab)
-
-    rp_lab_array = np.asarray(rp_lab_array)
-
-    return rp_lab_array
-
-def lda(X_train, y_train, X_val, y_val):
-
-    lda = LinearDiscriminantAnalysis()
-    lda_object = lda.fit(X_train, y_train)
-
-    prediction = lda.predict(X_val)
-
-    return prediction
-
-def lda_plot():
-
-    #Plot train data
-    for index, X in enumerate(X_train):
-        if index < 23:
-            plt.scatter(X[0], X[1], c='r')
-        else:
-            plt.scatter(X[0], X[1], c='b')
-
-    plt.scatter(X_val[:,0], X_val[:,1], c='g')
-
-    x1 = np.array([np.min(X_train[:,0], axis=0), np.max(X_train[:,0], axis=0)])
-
-    '''
-    #Plot line
-    b, w1, w2 = lda.intercept_[0], lda.coef_[0][0], lda.coef_[0][1]
-    y1 = -(b + x1*w1)/w2    
-    plt.plot(x1, y1)
-    '''
-
-    plt.show()
-
-def knn(X_train, y_train, X_val, y_val):
-
-    classifier = KNeighborsClassifier(n_neighbors=3)
-    classifier.fit(X_train, y_train)
-
-    prediction = classifier.predict(X_val)
-
-def cal_cr_balance_cr(prediction, y_val):
-
-    TP = 0
-    TN = 0
-    FP = 0
-    FN = 0
-
-    for index, (pred, y) in enumerate(zip(prediction, y_val)):
-
-        if index < 10:
-            if pred == y:
-                TP += 1
-            else:
-                TN += 1
-        else:
-            if pred == y:
-                FP += 1
-            else:
-                FN += 1
-
-    CR = (TP+TN)/prediction.shape[0]
-
-    TPR = TP/(TP + FN)
-    TNR = TN/(FP + TN)
-
-    balance_CR = (TPR + TNR)/2
-
-    print([TP, TN, FP, FN])
-    print(CR)
-    print(balance_CR)
-
 def find_first_two_features(data_raw):
 
     train_features = []
@@ -251,6 +159,111 @@ def find_first_two_features(data_raw):
     #print(idx)
 
     return idx[0], idx[1]
+
+def cal_cr_balance_cr(prediction, y_val):
+
+    TP = 0
+    TN = 0
+    FP = 0
+    FN = 0
+
+    for index, (pred, y) in enumerate(zip(prediction, y_val)):
+
+        if index < 10:
+            if pred == y:
+                TP += 1
+            else:
+                FP += 1
+        else:
+            if pred == y:
+                TN += 1
+            else:
+                FN += 1
+
+    CR = (TP+TN)/prediction.shape[0]
+
+    TPR = TP/(TP + FN)
+    TNR = TN/(FP + TN)
+
+    balance_CR = (TPR + TNR)/2
+
+    print([TP, FP, FN, TN])
+    print(CR)
+    print(balance_CR)
+
+    return CR, balance_CR
+
+def relative_power_lab(rp_ratio_array):
+    
+    rp_lab_array = []
+
+    for band_index in range(0, 5):
+        for channel in range(0, 30):
+            for rec_channel in range(channel, 30):
+
+                if rec_channel == channel:
+                    continue
+                else:
+    
+                    b_1 = rp_ratio_array[channel][band_index]
+                    b_2 = rp_ratio_array[rec_channel][band_index]
+
+                    rp_lab = (b_2 - b_1) / (b_1 + b_2)
+
+                    rp_lab_array.append(rp_lab)
+
+    rp_lab_array = np.asarray(rp_lab_array)
+
+    return rp_lab_array
+
+def lda(X_train, y_train, X_val, y_val):
+
+    lda = LinearDiscriminantAnalysis()
+    lda_object = lda.fit(X_train, y_train)
+
+    prediction = lda.predict(X_val)
+
+    print(prediction.shape)
+
+    fig, ax = plt.subplots()
+
+    #Plot train data
+    for index, train in enumerate(X_train):
+
+        if index <13:
+            #Patient Train data plot
+            pt = ax.scatter(train[0], train[1], marker='o', c='r')
+        else:
+            #HC Train data plot
+            ht = ax.scatter(train[0], train[1], marker='o', c='b')
+
+    for index, val in enumerate(X_val):
+        if index <10:
+            #Patient Val data plot
+            pv = ax.scatter(val[0], val[1], marker='x', c='r')
+        else:
+            #HC Val data plot
+            hv = ax.scatter(val[0], val[1], marker='x', c='b')
+
+    x1 = np.array([np.min(X_train[:,0], axis=0), np.max(X_train[:,0], axis=0)])
+
+    #Plot line
+    b, w1, w2 = lda.intercept_[0], lda.coef_[0][0], lda.coef_[0][1]
+    y1 = -(b + x1*w1)/w2    
+    ax.plot(x1, y1)
+
+    ax.legend([pt, ht, pv, hv], ["Patient Train data", "HC Train data", "Patient Val data", "HC Val data"])
+
+    plt.show()
+
+    return prediction
+
+def knn(X_train, y_train, X_val, y_val):
+
+    classifier = KNeighborsClassifier(n_neighbors=3)
+    classifier.fit(X_train, y_train)
+
+    prediction = classifier.predict(X_val)
 
 def main():
     
@@ -292,15 +305,15 @@ def main():
     val_X = np.asarray(val_X)
     val_y = np.asarray(val_y)
 
-    """
     print(train_X.shape)
     print(train_y.shape)
     print(val_X.shape)
     print(val_y.shape)
-    """
 
-    knn(train_X, train_y, val_X, val_y)
-    lda(train_X, train_y, val_X, val_y)
+    com_pred = lda(train_X, train_y, val_X, val_y)
+    #knn(train_X, train_y, val_X, val_y)
+
+    cal_cr_balance_cr(com_pred, val_y)
 
 def leave_one_out():
 
@@ -356,9 +369,11 @@ def add_one_feature():
 
     loo = LeaveOneOut()
 
+    com_CR = []
+
     with Bar('Processing') as bar:
 
-        for com_index in range(5, 47):
+        for feature_index in range(5, 47):
 
             X = []
             y = []
@@ -367,7 +382,7 @@ def add_one_feature():
             
                 features = compute(subjects[0])
 
-                X.append(features[0:com_index])
+                X.append(features[0:feature_index])
                 if index < 23:
                     y.append(patient)
                 else:
@@ -390,12 +405,19 @@ def add_one_feature():
 
             com_pred = np.asarray(com_pred)
 
-            cal_cr_balance_cr(com_pred, y)
+            CR, balance_CR = cal_cr_balance_cr(com_pred, y)
+
+            com_CR.append(CR)
 
             bar.next()
 
+    com_CR = np.asarray(com_CR)
+
+    plt.plot(com_CR)
+    plt.show()
+
 if __name__ == '__main__':
-    #main()
+    main()
     #leave_one_out()
-    add_one_feature()
+    #add_one_feature()
     
