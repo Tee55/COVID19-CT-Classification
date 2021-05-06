@@ -193,6 +193,19 @@ def cal_cr_balance_cr(prediction, y_val):
 
     return CR, balance_CR
 
+def cal_acc(prediction, y_val):
+
+    score = 0
+
+    for index, (pred, y) in enumerate(zip(prediction, y_val)):
+        if pred == y:
+            score += 1
+
+    acc = score/prediction.shape[0]
+
+    print(acc)
+
+
 def relative_power_lab(rp_ratio_array):
     
     rp_lab_array = []
@@ -223,8 +236,6 @@ def lda(X_train, y_train, X_val, y_val):
 
     prediction = lda.predict(X_val)
 
-    print(prediction.shape)
-
     fig, ax = plt.subplots()
 
     #Plot train data
@@ -238,6 +249,7 @@ def lda(X_train, y_train, X_val, y_val):
             ht = ax.scatter(train[0], train[1], marker='o', c='b')
 
     for index, val in enumerate(X_val):
+
         if index <10:
             #Patient Val data plot
             pv = ax.scatter(val[0], val[1], marker='x', c='r')
@@ -255,6 +267,45 @@ def lda(X_train, y_train, X_val, y_val):
     ax.legend([pt, ht, pv, hv], ["Patient Train data", "HC Train data", "Patient Val data", "HC Val data"])
 
     plt.show()
+
+    return prediction
+
+def lda_loo(X_train, y_train, X_val, y_val):
+
+    lda = LinearDiscriminantAnalysis()
+    lda_object = lda.fit(X_train, y_train)
+
+    prediction = lda.predict(X_val)
+
+    '''
+
+    fig, ax = plt.subplots()
+
+    #Plot train data
+    for index, (X, y) in enumerate(zip(X_train, y_train)):
+
+        if y == 1:
+            #Patient Train data plot
+            pt = ax.scatter(X[0], X[1], marker='o', c='r')
+        else:
+            #HC Train data plot
+            ht = ax.scatter(X[0], X[1], marker='o', c='b')
+
+    for index, val in enumerate(X_val):
+
+        val = ax.scatter(val[0], val[1], marker='x', c='g')
+
+    x1 = np.array([np.min(X_train[:,0], axis=0), np.max(X_train[:,0], axis=0)])
+
+    #Plot line
+    b, w1, w2 = lda.intercept_[0], lda.coef_[0][0], lda.coef_[0][1]
+    y1 = -(b + x1*w1)/w2    
+    ax.plot(x1, y1)
+
+    ax.legend([pt, ht, val], ["Patient Train data", "HC Train data", "Val data"])
+
+    plt.show()
+    '''
 
     return prediction
 
@@ -343,6 +394,10 @@ def leave_one_out():
     X = np.asarray(X)
     y = np.asarray(y)
 
+    df = pd.DataFrame(X)
+
+    df.to_csv("data.csv")
+
     loo = LeaveOneOut()
 
     com_pred = []
@@ -352,14 +407,14 @@ def leave_one_out():
         train_X, val_X = X[train_index], X[test_index]
         train_y, val_y = y[train_index], y[test_index]
 
-        pred = lda(train_X, train_y, val_X, val_y)
+        pred = lda_loo(train_X, train_y, val_X, val_y)
         #pred = knn(train_X, train_y, val_X, val_y)
 
         com_pred.append(pred)
 
     com_pred = np.asarray(com_pred)
 
-    cal_cr_balance_cr(com_pred, y)
+    cal_acc(com_pred, y)
 
 def add_one_feature():
 
@@ -398,6 +453,11 @@ def add_one_feature():
                 train_X, val_X = X[train_index], X[test_index]
                 train_y, val_y = y[train_index], y[test_index]
 
+                train_X = np.asarray(train_X)
+                train_y = np.asarray(train_y)
+                val_X = np.asarray(val_X)
+                val_y = np.asarray(val_y)
+
                 pred = lda(train_X, train_y, val_X, val_y)
                 #pred = knn(train_X, train_y, val_X, val_y)
 
@@ -417,7 +477,7 @@ def add_one_feature():
     plt.show()
 
 if __name__ == '__main__':
-    main()
-    #leave_one_out()
+    #main()
+    leave_one_out()
     #add_one_feature()
     
