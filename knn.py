@@ -203,8 +203,6 @@ def cal_acc(prediction, y_val):
 
     acc = score/prediction.shape[0]
 
-    print(acc)
-
     return acc
 
 
@@ -506,23 +504,20 @@ def sequence_feature_selection():
 
     data_raw = mat['data']
 
-    com_acc = []
-
     idx = fisher(data_raw)
 
     feature_list_index = [index for index in idx[0:5]]
 
     stack_features = []
 
-    #Add first index from fisher to stack
-    stack_features.append(feature_list_index[0])
-    feature_list_index.pop(0)
+    highest_acc = []
 
     with Bar('Processing') as bar:
         
-        while len(stack_features) <= 5:
+        while len(stack_features) < 5:
 
             stack_y = []
+            com_acc = []
 
             for com_feature_index in feature_list_index:
 
@@ -534,8 +529,6 @@ def sequence_feature_selection():
                     com_fea.append(fea)
                     
                 com_fea.append(com_feature_index)
-
-                print(com_fea)
 
                 stack_y.append(com_fea)
 
@@ -583,17 +576,20 @@ def sequence_feature_selection():
             com_acc = np.asarray(com_acc)
             stack_y = np.asarray(stack_y)
 
-            print(com_acc)
-            print(stack_y)
+            highest_index = np.argmax(com_acc)
 
-            maximum = np.max(com_acc)
-
-            highest_index = np.where(com_acc == maximum)
+            highest_acc.append(np.max(com_acc))
 
             stack_features = stack_y[highest_index]
 
-            plt.plot(com_acc)
-            plt.show()
+            feature_list_index.remove(stack_features[-1])
+
+    highest_acc = np.asarray(highest_acc)
+
+    print(highest_acc)
+
+    plt.plot(highest_acc)
+    plt.show()
 
 if __name__ == '__main__':
     #main()
