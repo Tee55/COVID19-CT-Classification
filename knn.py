@@ -500,8 +500,104 @@ def add_one_feature():
     plt.plot(com_acc)
     plt.show()
 
+def sequence_feature_selection():
+
+    mat = scipy.io.loadmat('Tee_170321.mat')
+
+    data_raw = mat['data']
+
+    com_acc = []
+
+    idx = fisher(data_raw)
+
+    feature_list_index = [index for index in idx[0:5]]
+
+    stack_features = []
+
+    #Add first index from fisher to stack
+    stack_features.append(feature_list_index[0])
+    feature_list_index.pop(0)
+
+    with Bar('Processing') as bar:
+        
+        while len(stack_features) <= 5:
+
+            stack_y = []
+
+            for com_feature_index in feature_list_index:
+
+                com_fea = []
+                X = []
+                y = []
+
+                for fea in stack_features:
+                    com_fea.append(fea)
+                    
+                com_fea.append(com_feature_index)
+
+                print(com_fea)
+
+                stack_y.append(com_fea)
+
+                for index, subjects in enumerate(data_raw):
+                
+                    features = compute(subjects[0])
+
+                    X.append([features[i] for i in com_fea])
+
+                    if index < 23:
+                        y.append(patient)
+                    else:
+                        y.append(HC)
+
+                X = np.asarray(X)
+                y = np.asarray(y)
+
+                com_pred = []
+
+                loo = LeaveOneOut()
+
+                for train_index, test_index in loo.split(X):
+
+                    train_X, val_X = X[train_index], X[test_index]
+                    train_y, val_y = y[train_index], y[test_index]
+
+                    train_X = np.asarray(train_X)
+                    train_y = np.asarray(train_y)
+                    val_X = np.asarray(val_X)
+                    val_y = np.asarray(val_y)
+
+                    pred = lda_loo(train_X, train_y, val_X, val_y)
+                    #pred = knn(train_X, train_y, val_X, val_y)
+
+                    com_pred.append(pred)
+
+                com_pred = np.asarray(com_pred)
+
+                acc = cal_acc(com_pred, y)
+
+                com_acc.append(acc)
+
+                bar.next()
+
+            com_acc = np.asarray(com_acc)
+            stack_y = np.asarray(stack_y)
+
+            print(com_acc)
+            print(stack_y)
+
+            maximum = np.max(com_acc)
+
+            highest_index = np.where(com_acc == maximum)
+
+            stack_features = stack_y[highest_index]
+
+            plt.plot(com_acc)
+            plt.show()
+
 if __name__ == '__main__':
     #main()
     #leave_one_out()
-    add_one_feature()
+    #add_one_feature()
+    sequence_feature_selection()
     
