@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-import glob
+from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
@@ -41,8 +41,17 @@ image_gen = ImageDataGenerator(rescale = 1./255, shear_range = 0.2, zoom_range =
 
 def train():
 
-    train = image_gen.flow_from_directory(train_path, target_size=(img_height, img_width), color_mode='grayscale', batch_size=batch_size)
-    valid = test_data_gen.flow_from_directory(valid_path, target_size=(img_height, img_width), color_mode='grayscale', batch_size=batch_size)
+    train = image_gen.flow_from_directory(train_path, target_size=(img_height, img_width), color_mode='rgb', batch_size=batch_size)
+    valid = test_data_gen.flow_from_directory(valid_path, target_size=(img_height, img_width), color_mode='rgb', batch_size=batch_size)
+
+    vgg = VGG_model()
+
+    vgg16_features = vgg.predict(train)
+
+    steps = [('pca', PCA(n_components=15)), ('m', LogisticRegression())]
+
+    model = Pipeline(steps=steps)
+    model.fit(vgg16_features)
 
     cnn = create_model()
 
@@ -54,7 +63,7 @@ def train():
     weights = compute_class_weight('balanced', np.unique(train.classes), train.classes)
     cw = dict(zip( np.unique(train.classes), weights))
 
-    cnn.fit(train, epochs=25, validation_data=valid, class_weight=cw, callbacks=callbacks_list)
+    cnn.fit(pca_train, train.classes, epochs=25, validation_data=valid, class_weight=cw, callbacks=callbacks_list)
 
     cnn.save_weights("covid.h5")
 
@@ -82,15 +91,15 @@ def create_model():
 
     cnn = Sequential()
 
-    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 1)))
+    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 3)))
     cnn.add(MaxPooling2D(pool_size = (2, 2)))
-    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 1)))
+    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 3)))
     cnn.add(MaxPooling2D(pool_size = (2, 2)))
-    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 1)))
+    cnn.add(Conv2D(32, (3, 3), activation="relu", input_shape=(img_width, img_height, 3)))
     cnn.add(MaxPooling2D(pool_size = (2, 2)))
-    cnn.add(Conv2D(64, (3, 3), activation="relu", input_shape=(img_width, img_height, 1)))
+    cnn.add(Conv2D(64, (3, 3), activation="relu", input_shape=(img_width, img_height, 3)))
     cnn.add(MaxPooling2D(pool_size = (2, 2)))
-    cnn.add(Conv2D(64, (3, 3), activation="relu", input_shape=(img_width, img_height, 1)))
+    cnn.add(Conv2D(64, (3, 3), activation="relu", input_shape=(img_width, img_height, 3)))
     cnn.add(MaxPooling2D(pool_size = (2, 2)))
     cnn.add(Flatten())
     cnn.add(Dense(units = 128, activation = 'relu'))
@@ -99,6 +108,12 @@ def create_model():
     cnn.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
 
     return cnn
+
+def VGG_model():
+
+    vgg = VGG16(weights='imagenet', include_top=False)
+
+    return vgg
 
 if __name__ == '__main__':
     train()
